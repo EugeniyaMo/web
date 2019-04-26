@@ -14,7 +14,7 @@ class LoginForm(FlaskForm):
 class RegisterForm(FlaskForm):
     """Форма регистрации"""
     user_name = StringField('Имя пользователя', validators=[DataRequired()])
-    email = StringField('Email адрес', validators=[DataRequired(), Email()])
+    email = StringField('Email-адрес', validators=[DataRequired(), Email()])
     password_hash = PasswordField('Пароль', validators=[DataRequired()])
     confirm = PasswordField('Повторите пароль', validators=[DataRequired()])
     accept_tos = BooleanField('Я принимаю лицензионное соглашение', validators=[DataRequired()])
@@ -39,10 +39,10 @@ class AddCinemaForm(FlaskForm):
     submit = SubmitField('Добавить кинотеатр')
 
 
-class SearchPriceForm(FlaskForm):
-    """Форма поиска по цене"""
-    start_price = IntegerField('Минимальная цена', validators=[DataRequired()], default=500000)
-    end_price = IntegerField('Максимальная цена', validators=[DataRequired()], default=1000000)
+class SearchYearForm(FlaskForm):
+    """Форма поиска по году"""
+    start_price = IntegerField('Минимальный год', validators=[DataRequired()], default=1800)
+    end_price = IntegerField('Максимальный год', validators=[DataRequired()], default=2100)
     submit = SubmitField('Поиск')
 
 

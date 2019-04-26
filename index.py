@@ -1,7 +1,7 @@
 from flask import Flask, session, redirect, render_template, flash, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import UsersModel, FilmsModel, CinemasModel
-from forms import LoginForm, RegisterForm, AddFilmForm, SearchPriceForm, SearchCinemaForm, AddCinemaForm
+from forms import LoginForm, RegisterForm, AddFilmForm, SearchYearForm, SearchCinemaForm, AddCinemaForm
 from db import DB
 
 app = Flask(__name__)
@@ -84,8 +84,8 @@ def register():
 """Работа с фильмами"""
 
 
-@app.route('/car_admin', methods=['GET'])
-def car_admin():
+@app.route('/film_admin', methods=['GET'])
+def film_admin():
     """
     Вывод всей информации об всех автомобилях
     :return:
@@ -99,17 +99,17 @@ def car_admin():
         flash('Доступ запрещен')
         redirect('index')
     # если обычный пользователь, то его на свою
-    cars = CarsModel(db.get_connection()).get_all()
-    return render_template('car_admin.html',
+    films = FilmsModel(db.get_connection()).get_all()
+    return render_template('film_admin.html',
                            username=session['username'],
-                           title='Просмотр автомобилей',
-                           cars=cars)
+                           title='Просмотр фильмов',
+                           films=films)
 
 
-@app.route('/add_car', methods=['GET', 'POST'])
-def add_car():
+@app.route('/add_film', methods=['GET', 'POST'])
+def add_film():
     """
-    Добавление автомобиля
+    Добавление фильма
     """
     # если пользователь не авторизован, кидаем его на страницу входа
     if 'username' not in session:
@@ -117,26 +117,27 @@ def add_car():
     # если админ, то его на свою страницу
     if session['username'] != 'admin':
         return redirect('index')
-    form = AddCarForm()
-    available_dealers = [(i[0], i[1]) for i in DealersModel(db.get_connection()).get_all()]
-    form.dealer_id.choices = available_dealers
+    form = AddFilmForm()
+    available_cinemas = [(i[0], i[1]) for i in CinemasModel(db.get_connection()).get_all()]
+    form.cinema_id.choices = available_cinemas
     if form.validate_on_submit():
-        # создать автомобиль
-        cars = CarsModel(db.get_connection())
-        cars.insert(model=form.model.data,
-                    price=form.price.data,
-                    power=form.power.data,
-                    color=form.color.data,
-                    dealer=form.dealer_id.data)
+        # создать фильм
+        films = FilmsModel(db.get_connection())
+        films.insert(name=form.name.data,
+                    year=form.year.data,
+                    country=form.country.data,
+                    genre=form.genre.data,
+                    rating=form.rating.data,
+                    cinema=form.cinema_id.data)
         # редирект на главную страницу
-        return redirect(url_for('car_admin'))
-    return render_template("add_car.html", title='Добавление автомобиля', form=form)
+        return redirect(url_for('film_admin'))
+    return render_template("add_film.html", title='Добавление фильма', form=form)
 
 
-@app.route('/car/<int:car_id>', methods=['GET'])
-def car(car_id):
+@app.route('/film/<int:film_id>', methods=['GET'])
+def film(film_id):
     """
-    Вывод всей информации об автомобиле
+    Вывод всей информации о фильме
     :return:
     информация для авторизованного пользователя
     """
@@ -147,52 +148,52 @@ def car(car_id):
     '''if session['username'] != 'admin':
         return redirect(url_for('index'))'''
     # иначе выдаем информацию
-    car = CarsModel(db.get_connection()).get(car_id)
-    dealer = DealersModel(db.get_connection()).get(car[5])
-    return render_template('car_info.html',
+    film = FilmsModel(db.get_connection()).get(film_id)
+    cinema = CinemasModel(db.get_connection()).get(film[5])
+    return render_template('film_info.html',
                            username=session['username'],
-                           title='Просмотр автомобиля',
-                           car=car,
-                           dealer=dealer[1])
+                           title='Просмотр информации о фильме',
+                           film=film,
+                           cinema=cinema[1])
 
 
 @app.route('/search_price', methods=['GET', 'POST'])
 def search_price():
     """
-    Запрос автомобилей, удовлетворяющих определенной цене
+    Запрос фильмов, удовлетворяющих определенному году
     """
-    form = SearchPriceForm()
+    form = SearchYearForm()
     if form.validate_on_submit():
-        # получить все машины по определенной цене
-        cars = CarsModel(db.get_connection()).get_by_price(form.start_price.data, form.end_price.data)
+        # получить все фильмы по определенным годам
+        films = FilmsModel(db.get_connection()).get_by_year(form.start_year.data, form.end_year.data)
         # редирект на страницу с результатами
-        return render_template('car_user.html', username=session['username'], title='Просмотр базы', cars=cars)
-    return render_template("search_price.html", title='Подбор по цене', form=form)
+        return render_template('film_user.html', username=session['username'], title='Просмотр базы', films=films)
+    return render_template("search_year.html", title='Подбор по годам', form=form)
 
 
-@app.route('/search_dealer', methods=['GET', 'POST'])
-def search_dealer():
+@app.route('/search_cinema', methods=['GET', 'POST'])
+def search_cinema():
     """
-    Запрос автомобилей, продающихся в определенном дилерском центре
+    Запрос фильмов в определенном кинотеатре
     """
-    form = SearchDealerForm()
-    available_dealers = [(i[0], i[1]) for i in DealersModel(db.get_connection()).get_all()]
-    form.dealer_id.choices = available_dealers
+    form = SearchCinemaForm()
+    available_cinemas = [(i[0], i[1]) for i in CinemasModel(db.get_connection()).get_all()]
+    form.cinema_id.choices = available_cinemas
     if form.validate_on_submit():
         #
-        cars = CarsModel(db.get_connection()).get_by_dealer(form.dealer_id.data)
+        films = FilmsModel(db.get_connection()).get_by_cinema(form.cinema_id.data)
         # редирект на главную страницу
-        return render_template('car_user.html', username=session['username'], title='Просмотр базы', cars=cars)
-    return render_template("search_dealer.html", title='Подбор по цене', form=form)
+        return render_template('film_user.html', username=session['username'], title='Просмотр базы', films=films)
+    return render_template("search_cinema.html", title='Подбор по году', form=form)
 
 
-'''Работа с дилерским центром'''
+'''Работа с кинотеатром'''
 
 
-@app.route('/dealer_admin', methods=['GET'])
-def dealer_admin():
+@app.route('/cinema_admin', methods=['GET'])
+def cinema_admin():
     """
-    Вывод всей информации об всех дилерских центрах
+    Вывод всей информации об всех кинотеатрах
     :return:
     информация для авторизованного пользователя
     """
@@ -204,17 +205,17 @@ def dealer_admin():
         flash('Доступ запрещен')
         redirect('index')
     # иначе это админ
-    dealers = DealersModel(db.get_connection()).get_all()
-    return render_template('dealer_admin.html',
+    cinemas = CinemasModel(db.get_connection()).get_all()
+    return render_template('cinema_admin.html',
                            username=session['username'],
-                           title='Просмотр Дилерских центров',
-                           dealers=dealers)
+                           title='Просмотр кинотеатров',
+                           cinemas=cinemas)
 
 
-@app.route('/dealer/<int:dealer_id>', methods=['GET'])
-def dealer(dealer_id):
+@app.route('/cinema/<int:cinema_id>', methods=['GET'])
+def cinema(cinema_id):
     """
-    Вывод всей информации о дилерском центре
+    Вывод всей информации о кинотеатре
     :return:
     информация для авторизованного пользователя
     """
@@ -225,31 +226,31 @@ def dealer(dealer_id):
     if session['username'] != 'admin':
         return redirect(url_for('index'))
     # иначе выдаем информацию
-    dealer = DealersModel(db.get_connection()).get(dealer_id)
-    return render_template('dealer_info.html',
+    cinema = CinemasModel(db.get_connection()).get(cinema_id)
+    return render_template('cinema_info.html',
                            username=session['username'],
-                           title='Просмотр информации о дилерском центре',
-                           dealer=dealer)
+                           title='Просмотр информации о кинотеатре',
+                           cinema=cinema)
 
 
-@app.route('/add_dealer', methods=['GET', 'POST'])
-def add_dealer():
+@app.route('/add_cinema', methods=['GET', 'POST'])
+def add_cinema():
     """
-    Добавление дилерского центра и вывод на экран информации о нем
+    Добавление кинотеатра и вывод на экран информации о нем
     """
     # если пользователь не авторизован, кидаем его на страницу входа
     if 'username' not in session:
         return redirect('/login')
     # если админ, то его на свою страницу
     if session['username'] == 'admin':
-        form = AddDealerForm()
+        form = AddCinemaForm()
         if form.validate_on_submit():
             # создать дилера
-            dealers = DealersModel(db.get_connection())
-            dealers.insert(name=form.name.data, address=form.address.data)
+            cinemas = CinemasModel(db.get_connection())
+            cinemas.insert(name=form.name.data, address=form.address.data)
             # редирект на главную страницу
             return redirect(url_for('index'))
-        return render_template("add_dealer.html", title='Добавление дилерского центра', form=form)
+        return render_template("add_cinema.html", title='Добавление кинотеатра', form=form)
 
 
 if __name__ == '__main__':
